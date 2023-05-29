@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <script src="/javascripts/jquery.js"></script>
+  <script src="/javascripts/handlebars.js"></script>
+  <script src="/javascripts/app.js"></script>
+</head>
+<body>
+  <div>
+    <input type="search" id="search"/>
+  </div>
+  <h2>Create Contact</h2>
+  <form method="post" id="createContact">
+    <label for="name">Full name:</label><br>
+    <input type="text" id="name" name="full_name" value=""><br>
+    <label for="email">Email address:</label><br>
+    <input type="text" id="email" name="email" value=""><br>
+    <label for="phone">Phone number:</label><br>
+    <input type="text" id="phone" name="phone_number" value=""><br>
+    <label for="phone">Tags:</label><br>
+    <select id="tags" name="tags" size="2" multiple>
+      <option value="work">Work</option>
+      <option value="friend">Friend</option>
+    </select>
+    <input type="submit" value="Submit">
+  </form> 
+  <h2>Contacts List</h2>
+  <div id="viewlist"></div>
+  <script id='contact_template' type='text/x-handlebars'>
+    <div id="id_{{id}}">
+      <p id="name_{{id}}">{{full_name}}</p>
+      <p id="phone_{{id}}">{{phone_number}}</p>
+      <p id="email_{{id}}">{{email}}</p>
+      <button id="edit_{{id}}">Edit</button><br>
+      <button id="delete_{{id}}">Delete</button>
+    </div>
+  </script>
+</body>
+</html>
