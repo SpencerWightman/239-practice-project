@@ -11,6 +11,7 @@
 </head>
 <body>
   <div>
+    <label for="search">Search Contacts:</label>
     <input type="search" id="search"/>
   </div>
   <h2>Create Contact</h2>
@@ -29,12 +30,13 @@
     <input type="submit" value="Submit">
   </form> 
   <h2>Contacts List</h2>
+  <button id="showall">Show All Contacts</button><br>
   <div id="viewlist"></div>
   <script id='contact_template' type='text/x-handlebars'>
     <div id="id_{{id}}">
-      <p id="name_{{id}}">{{full_name}}</p>
-      <p id="phone_{{id}}">{{phone_number}}</p>
-      <p id="email_{{id}}">{{email}}</p>
+      <p id="name_{{id}}"><b>Name:</b> {{full_name}}</p>
+      <p id="phone_{{id}}"><b>Phone:</b> {{phone_number}}</p>
+      <p id="email_{{id}}"><b>Email:</b> {{email}}</p>
       <button id="edit_{{id}}">Edit</button><br>
       <button id="delete_{{id}}">Delete</button>
     </div>

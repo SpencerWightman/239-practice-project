@@ -10,16 +10,34 @@ document.addEventListener('DOMContentLoaded', event => {
     gatherFormData(form) {
       let formData = new FormData(form);
       let holdingObj = {};
-      let keyHolder = [];
+      let tagHolder = [];
       formData.forEach((value, key) => {
         if (key === 'tags') {
-          keyHolder.push(value);
+          tagHolder.push(value);
         } else {
           holdingObj[key] = value;
         }
       });
-      holdingObj['tags'] = keyHolder.join(',');
-      return JSON.stringify(holdingObj);
+      holdingObj['tags'] = tagHolder.join(',');
+      let validation = this.validateFormData(holdingObj);
+      if (validation === true) {
+        return JSON.stringify(holdingObj);
+      } else {
+        return { message: validation };
+      }
+    },
+    validateFormData(holdingObj) {
+      for (key in holdingObj) {
+        if (key === 'tags') continue;
+        if (!holdingObj[key]) {
+          return 'Empty values are not allowed.';
+        } else if(key === 'email' && !holdingObj[key].match(/[@]/g)) {
+          return 'Enter a valid email.';
+        } else if(key === 'phone_number' && holdingObj[key].match(/[a-z]/ig)) {
+          return 'Enter a valid phone number.';
+        }
+      }
+      return true;
     },
     addFormListener() {
       let form = this.form();
@@ -28,18 +46,28 @@ document.addEventListener('DOMContentLoaded', event => {
 
         let json = this.gatherFormData(this.form())
     
-        fetch(
-          'http://localhost:3000/api/contacts/',
-          { method: 'POST',
-            headers: {'Content-Type': 'application/json; charset=UTF-8'},
-            body: json,
-          }
-        ).then((response) => {
-          console.log(response.status);
-        });
-    
-        this.addContact();
-      })
+        if (!json.message) {
+          fetch(
+            'http://localhost:3000/api/contacts/',
+            { method: 'POST',
+              headers: {'Content-Type': 'application/json; charset=UTF-8'},
+              body: json,
+            }
+          ).then((response) => {
+            console.log(response.status);
+            this.addContact();
+          });
+        } else {
+          let oldMessage = document.querySelector('#errormessage');
+          if (oldMessage) oldMessage.remove();
+          let errorMessage = document.createElement('p');
+          errorMessage.id = 'errormessage';
+          console.log(json.message);
+          errorMessage.textContent = json.message;
+          this.form().insertAdjacentElement('afterend', errorMessage);
+          setTimeout(() => { errorMessage.remove() }, 5000);
+        }
+      });
     },
     addContact() {
       fetch(
@@ -53,6 +81,7 @@ document.addEventListener('DOMContentLoaded', event => {
         document.querySelector('#viewlist')
           .insertAdjacentHTML('afterbegin', CONTACT_TEMPLATE(newContact));
         this.addButtons(newContact);
+        this.resetAddContactForm();
       })
     },
     showContacts(searchVal='.', tag) {
@@ -94,12 +123,19 @@ document.addEventListener('DOMContentLoaded', event => {
       let list = document.querySelector('#viewlist');
       list.innerHTML = '';
     },
+    resetAddContactForm() {
+      let contactForm = this.form();
+      contactForm.querySelector("input[id='name']").value = '';
+      contactForm.querySelector("input[id='phone']").value = '';
+      contactForm.querySelector("input[id='email']").value = '';
+      contactForm.querySelector("#tags").value = '';
+    },
     addButtons(contact) {
       let deleteButton = document.querySelector(`#delete_${contact.id}`);
       this.addDeleteEvent(deleteButton, contact.id);
       let editButton = document.querySelector(`#edit_${contact.id}`);
       this.addEditButton(editButton, contact);
-      this.addTagButtons(editButton, contact);
+      if (contact.tags) this.addTagButtons(editButton, contact);
     },
     addTagButtons(editButton, contact) {
       let tags = contact.tags;
@@ -145,13 +181,23 @@ document.addEventListener('DOMContentLoaded', event => {
         editForm.querySelector("input[id='phone']").value = `${contactData.phone_number}`;
         editForm.querySelector("input[id='email']").value = `${contactData.email}`;
   
-        let cancelButton = document.createElement('button');
+        let cancelButton = document.createElement('button'); 
         cancelButton.textContent = 'Cancel';
+        cancelButton.id = `cancel_${contactData.id}`;
         editForm.querySelector("input[type='submit']").insertAdjacentElement('afterend', cancelButton);
 
+        let contactBackup = contact.cloneNode(true);
         contact.replaceWith(editForm);
-        
+
+        this.addCancelEvent(editForm, contactBackup, contactData);
         this.addEditSubmissionEvent(editForm, contactData);
+      });
+    },
+    addCancelEvent(editForm, contactBackup, contactData) {
+      let cancelButton = document.querySelector(`#cancel_${contactData.id}`);
+      cancelButton.addEventListener('click', event => {
+        editForm.replaceWith(contactBackup);
+        this.addButtons(contactData);
       });
     },
     addEditSubmissionEvent(editForm, contactData) {
@@ -160,25 +206,44 @@ document.addEventListener('DOMContentLoaded', event => {
 
         let json = this.gatherFormData(editForm);
 
-        fetch(
-          `http://localhost:3000/api/contacts/${contactData.id}`,
-          { method: 'PUT',
-            headers: {'Content-Type': 'application/json; charset=UTF-8'},
-            body: json,
-          }
-        ).then((response) => {
-          return response.json();
-        }).then((data) => {
-          editForm.insertAdjacentHTML('beforebegin', CONTACT_TEMPLATE(data));
-          editForm.remove();
-          this.addButtons(data);
-        });
+        if (!json.message) {
+          fetch(
+            `http://localhost:3000/api/contacts/${contactData.id}`,
+            { method: 'PUT',
+              headers: {'Content-Type': 'application/json; charset=UTF-8'},
+              body: json,
+            }
+          ).then((response) => {
+            return response.json();
+          }).then((data) => {
+            editForm.insertAdjacentHTML('beforebegin', CONTACT_TEMPLATE(data));
+            editForm.remove();
+            this.addButtons(data);
+          });
+        } else {
+          let oldMessage = document.querySelector('#errormessage');
+          if (oldMessage) oldMessage.remove();
+          let errorMessage = document.createElement('p');
+          console.log(json.message);
+          errorMessage.id = 'errormessage';
+          errorMessage.textContent = json.message;
+          editForm.insertAdjacentElement('afterend', errorMessage);
+          setTimeout(() => { errorMessage.remove() }, 5000);
+        }
+      });
+    },
+    showAllContactsButton() {
+      let showAllButton = document.querySelector('#showall');
+      showAllButton.addEventListener('click', event => {
+        this.resetContactList();
+        this.showContacts();
       });
     },
     init() {
       this.showContacts();
       this.addFormListener();
       this.addSearchListener();
+      this.showAllContactsButton();
     }
   }
 
